@@ -30,6 +30,18 @@ plot(ma200, color=color.new(color.maroon, 0), title="MMA4", linewidth=1)
 shortColour = invertColours ? color.red : color.green
 longColour = invertColours ? color.green : color.red
 
+float setupShort = na
+float setupLong = na
+float lastCompletedSetup = na
+float setupHigh = na
+float setupLow = na
+float cdownShort = na
+float cdownLong = na
+float perfect8 = na
+float tdstResistance = na
+float tdstSupport = na
+float tdRisk = na
+
 // Setup
 setupShort = if close < close[4]
     0.0
