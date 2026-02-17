@@ -31,10 +31,10 @@ shortColour = invertColours ? color.red : color.green
 longColour = invertColours ? color.green : color.red
 
 // Setup
-setupShort = if close &lt; close[4]
+setupShort = if close < close[4]
     0.0
 else if flip
-    if nz(setupShort[1]) == 0 and close[1] &lt; close[5] and close &gt; close[4]
+    if nz(setupShort[1]) == 0 and close[1] < close[5] and close > close[4]
         1.0
     else if nz(setupShort[1]) == 0
         0.0
@@ -45,10 +45,10 @@ else if setupShort[1] == 9
 else
     nz(setupShort[1]) + 1
 
-setupLong = if close &gt; close[4]
+setupLong = if close > close[4]
     0.0
 else if flip
-    if nz(setupLong[1]) == 0 and close[1] &gt; close[5] and close &lt; close[4]
+    if nz(setupLong[1]) == 0 and close[1] > close[5] and close < close[4]
         1.0
     else if nz(setupLong[1]) == 0
         0.0
@@ -60,38 +60,38 @@ else
     nz(setupLong[1]) + 1
 
 setupCount = math.max(setupShort, setupLong)
-setupColour = setupShort &gt; 0 ? shortColour : longColour
-perfectSetup = showPerfect and ((setupShort == 8 and high &gt;= high[1] and high &gt;= high[2]) or (setupShort == 9 and high &gt;= high[2] and high &gt;= high[3]) or (setupLong == 8 and low &lt;= low[1] and low &lt;= low[2]) or (setupLong == 9 and low &lt;= low[2] and low &lt;= low[3]))
+setupColour = setupShort > 0 ? shortColour : longColour
+perfectSetup = showPerfect and ((setupShort == 8 and high >= high[1] and high >= high[2]) or (setupShort == 9 and high >= high[2] and high >= high[3]) or (setupLong == 8 and low <= low[1] and low <= low[2]) or (setupLong == 9 and low <= low[2] and low <= low[3]))
 
 // Setup labels
-is_short_setup = setupShort &gt; 0
+is_short_setup = setupShort > 0
 setup_y = is_short_setup ? high : low
 setup_yloc = is_short_setup ? yloc.abovebar : yloc.belowbar
 setup_style = is_short_setup ? label.style_label_down : label.style_label_up
 setup_label_color = color.new(setupColour, 20)
 
 if showSetup and not showOnlyCompletion and setupCount == 1
-    label.new(bar_index, setup_y, &quot;1&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "1", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not showOnlyCompletion and setupCount == 2
-    label.new(bar_index, setup_y, &quot;2&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "2", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not showOnlyCompletion and setupCount == 3
-    label.new(bar_index, setup_y, &quot;3&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "3", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not showOnlyCompletion and setupCount == 4
-    label.new(bar_index, setup_y, &quot;4&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "4", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not showOnlyCompletion and setupCount == 5
-    label.new(bar_index, setup_y, &quot;5&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "5", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not showOnlyCompletion and setupCount == 6
-    label.new(bar_index, setup_y, &quot;6&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "6", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not showOnlyCompletion and setupCount == 7
-    label.new(bar_index, setup_y, &quot;7&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "7", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if showSetup and not perfectSetup and not showOnlyCompletion and setupCount == 8
-    label.new(bar_index, setup_y, &quot;8&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "8", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if perfectSetup and showSetup and setupCount == 8
-    label.new(bar_index, setup_y, &quot;➑&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "➑", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if not perfectSetup and showSetup and setupCount == 9
-    label.new(bar_index, setup_y, &quot;⓽&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "⓽", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 if perfectSetup and showSetup and setupCount == 9
-    label.new(bar_index, setup_y, &quot;➒&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+    label.new(bar_index, setup_y, "➒", yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
 
 // Countdown vars
 LONG = -1.0
@@ -101,40 +101,40 @@ CANCELLED = 0.0
 setupHigh = ta.highest(9)
 setupLow = ta.lowest(9)
 
-recycleCountdown = ((setupShort == 9 and nz(lastCompletedSetup[1]) == SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) == LONG)) and (setupHigh - setupLow) &gt;= (nz(setupHigh[1]) - nz(setupLow[1])) and (nz(setupHigh[1]) - nz(setupLow[1])) * 1.618 &gt; (setupHigh - setupLow)
+recycleCountdown = ((setupShort == 9 and nz(lastCompletedSetup[1]) == SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) == LONG)) and (setupHigh - setupLow) >= (nz(setupHigh[1]) - nz(setupLow[1])) and (nz(setupHigh[1]) - nz(setupLow[1])) * 1.618 > (setupHigh - setupLow)
 
-cancelCountdown = (nz(lastCompletedSetup[1]) == SHORT and high &lt; nz(setupLow[1])) or (nz(lastCompletedSetup[1]) == LONG and low &gt; nz(setupHigh[1])) or recycleCountdown
+cancelCountdown = (nz(lastCompletedSetup[1]) == SHORT and high < nz(setupLow[1])) or (nz(lastCompletedSetup[1]) == LONG and low > nz(setupHigh[1])) or recycleCountdown
 
 lastCompletedSetup = setupLong == 9 ? LONG : setupShort == 9 ? SHORT : ((nz(cdownShort[1]) == 13 and nz(setupShort[1]) != 9) or (nz(cdownLong[1]) == 13 and nz(setupLong[1]) != 9) or cancelCountdown) ? CANCELLED : nz(lastCompletedSetup[1])
 
 setupHigh := recycleCountdown or (setupShort == 9 and nz(lastCompletedSetup[1]) != SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) != LONG) ? ta.highest(9) : nz(setupHigh[1])
 setupLow := recycleCountdown or (setupShort == 9 and nz(lastCompletedSetup[1]) != SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) != LONG) ? ta.lowest(9) : nz(setupLow[1])
 
-cdownShort = (lastCompletedSetup != SHORT or cancelCountdown) ? 0.0 : (close &gt;= high[2] ? (nz(cdownShort[1]) % 13) + 1 : nz(cdownShort[1]) % 13)
-cdownLong = (lastCompletedSetup != LONG or cancelCountdown) ? 0.0 : (close &lt;= low[2] ? (nz(cdownLong[1]) % 13) + 1 : nz(cdownLong[1]) % 13)
+cdownShort = (lastCompletedSetup != SHORT or cancelCountdown) ? 0.0 : (close >= high[2] ? (nz(cdownShort[1]) % 13) + 1 : nz(cdownShort[1]) % 13)
+cdownLong = (lastCompletedSetup != LONG or cancelCountdown) ? 0.0 : (close <= low[2] ? (nz(cdownLong[1]) % 13) + 1 : nz(cdownLong[1]) % 13)
 
 cdownCount = math.max(cdownShort, cdownLong)
-cdownColour = cdownShort &gt; 0 ? shortColour : longColour
+cdownColour = cdownShort > 0 ? shortColour : longColour
 
-perfect8 = cdownCount &lt; 8 ? na : cdownCount == 8 ? close : nz(perfect8[1])
-perfectCountdown = showPerfect and ((cdownShort == 13 and high &gt;= perfect8) or (cdownLong == 13 and low &lt;= perfect8))
+perfect8 = cdownCount < 8 ? na : cdownCount == 8 ? close : nz(perfect8[1])
+perfectCountdown = showPerfect and ((cdownShort == 13 and high >= perfect8) or (cdownLong == 13 and low <= perfect8))
 
 // Countdown labels (abbreviated for space, full in file)
 cdown_label_color = color.new(cdownColour, 20)
 if showCountdown and not showOnlyCompletion and cdownCount == 1 and cdownCount[1] != 1
-    label.new(bar_index, low, &quot;①&quot;, yloc=yloc.belowbar, color=cdown_label_color, style=label.style_label_up, size=size.small)
+    label.new(bar_index, low, "①", yloc=yloc.belowbar, color=cdown_label_color, style=label.style_label_up, size=size.small)
  // ... (full 1-13 labels as before)
 
 plotshape(showCountdown and cancelCountdown, title="Countdown broke", style=shape.xcross, location=location.belowbar, color=color.new(cdownColour, 0))
 
 // TDST
-tdstResistance = showTDST ? (setupLong == 9 ? ta.highest(9) : close &gt; nz(tdstResistance[1]) ? na : nz(tdstResistance[1])) : na
-tdstSupport = showTDST ? (setupShort == 9 ? ta.lowest(9) : close &lt; nz(tdstSupport[1]) ? na : nz(tdstSupport[1])) : na
+tdstResistance = showTDST ? (setupLong == 9 ? ta.highest(9) : close > nz(tdstResistance[1]) ? na : nz(tdstResistance[1])) : na
+tdstSupport = showTDST ? (setupShort == 9 ? ta.lowest(9) : close < nz(tdstSupport[1]) ? na : nz(tdstSupport[1])) : na
 
 plot(tdstResistance, "TDST Resistance", color.new(longColour, 0), 2)
 plot(tdstSupport, "TDST Support", color.new(shortColour, 0), 2)
 
-if barstate.isconfirmed and (close &gt; nz(tdstResistance[1]) or close &lt; nz(tdstSupport[1]))
+if barstate.isconfirmed and (close > nz(tdstResistance[1]) or close < nz(tdstSupport[1]))
     alert("Close outside TDST range", alert.freq_once_per_bar_close)
 
 // Risk
@@ -145,7 +145,7 @@ else if setupLong == 9
 else if setupShort == 9
     high[ta.highestbars(high, 9)] + ta.tr(true)[ta.highestbars(high, 9)]
 else
-    crossed = math.min(open, close) &lt; nz(tdRisk[1]) and math.max(open, close) &gt; nz(tdRisk[1])
+    crossed = math.min(open, close) < nz(tdRisk[1]) and math.max(open, close) > nz(tdRisk[1])
     crossed ? na : nz(tdRisk[1])
 
 plot(tdRisk, "TD Risk", color.new(color.black, 0), style=plot.style_cross, linewidth=1)
