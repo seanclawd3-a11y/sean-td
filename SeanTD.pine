@@ -1,0 +1,89 @@
+//@version=3
+study("SeanTD", "SeanTD Seq", overlay=true)
+showSetup = input(true, "Show setup")
+showCountdown = input(true, "Show countdown")
+showPerfect = input(true, "Show perfect counts")
+invertColours = input(false, "Invert colours")
+showOnlyCompletion = input(false, "Only show completions")
+showTDST = input(true, "Show TDST Support and Resistance")
+setupRecyclesOnNextBar = input(true, "Setup recycles on next bar")
+flip = input(false, "Setup commences after TD Price Flip")
+showRisk = input(false, "Show risk line")
+exponential = input(true, title="Exponential MA")
+line1 = input(title="MA1", type=integer, defval=24)
+line2 = input(title="MA2", type=integer, defval=50)
+line3 = input(title="MA3", type=integer, defval=128)
+line4 = input(title="MA4", type=integer, defval=200)
+src = close
+ma20 = exponential ? ema(src, line1) : sma(src, line1)
+ma50 = exponential ? ema(src, line2) : sma(src, line2)
+ma100 = exponential ? ema(src, line3) : sma(src, line3)
+ma200 = exponential ? ema(src, line4) : sma(src, line4)
+plot( ma20, color=orange, style=line, title="MMA1", linewidth=1, transp=0)
+plot( ma50, color=blue, style=line, title="MMA2", linewidth=1, transp=0)
+plot( ma100, color=green, style=line, title="MMA3", linewidth=1, transp=0)
+plot( ma200, color=maroon, style=line, title="MMA4", linewidth=1, transp=0)
+shortColour = invertColours ? red : green
+longColour = invertColours ? green : red
+setupShort = na, setupLong = na, setupCount = na, setupColour = na, perfectSetup = na
+setupShort := if (close < close[4]) 0 else if (flip) if (nz(setupShort[1]) == 0 and close[1] < close[5] and close > close[4]) 1 else if (nz(setupShort[1]) == 0) 0 else nz(setupShort[1] + 1) else if (setupShort[1] == 9) setupRecyclesOnNextBar ? 1 : 0 else nz(setupShort[1] + 1)
+setupLong := if (close > close[4]) 0 else if (flip) if (nz(setupLong[1]) == 0 and close[1] > close[5] and close < close[4]) 1 else if (nz(setupLong[1]) == 0) 0 else nz(setupLong[1] + 1) else if (setupLong[1] == 9) setupRecyclesOnNextBar ? 1 : 0 else nz(setupLong[1] + 1)
+setupCount := max(setupShort, setupLong)
+setupColour := setupShort > 0 ? shortColour : longColour
+perfectSetup := showPerfect and ((setupShort == 8 and (high >= high[1] and high >= high[2])) or (setupShort == 9 and (high >= high[2] and high >= high[3])) or (setupLong == 8 and (low <= low[1] and low <= low[2])) or (setupLong == 9 and (low <= low[2] and low <= low[3])))
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 1, title="Setup 1", char="1", color=setupColour, transp=0)
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 2, title="Setup 2", char="2", color=setupColour, transp=0)
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 3, title="Setup 3", char="3", color=setupColour, transp=0)
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 4, title="Setup 4", char="4", color=setupColour, transp=0)
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 5, title="Setup 5", char="5", color=setupColour, transp=0)
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 6, title="Setup 6", char="6", color=setupColour, transp=0)
+plotchar(showSetup and not(showOnlyCompletion) and setupCount == 7, title="Setup 7", char="7", color=setupColour, transp=0)
+plotchar(not(perfectSetup) and not(showOnlyCompletion) and showSetup and setupCount == 8, title="Setup 8", char="8", color=setupColour, transp=0)
+plotchar(not(perfectSetup) and showSetup and setupCount == 9, title="Setup 9", char="⓽", color=setupColour, transp=0)
+plotchar(perfectSetup and showSetup and setupCount == 8, title="Perfect setup 8", char="➑", color=setupColour, transp=0)
+plotchar(perfectSetup and showSetup and setupCount == 9, title="Perfect setup 9", char="➒", color=setupColour, transp=0)
+cdownShort = na, cdownLong = na, cdownColour = na, cdownCount = na, perfect8 = na, perfectCountdown = na
+lastCompletedSetup = na, setupHigh = na, setupLow = na, cancelCountdown = na, recycleCountdown = na
+LONG = -1, SHORT = 1, CANCELLED = 0
+recycleCountdown := if (setupShort == 9 and lastCompletedSetup[1] == SHORT) or (setupLong == 9 and lastCompletedSetup[1] == LONG) (highest(9) - lowest(9)) >= (setupHigh[1] - setupLow[1]) and (setupHigh[1] - setupLow[1]) * 1.618 > (highest(9) - lowest(9)) setupHigh := recycleCountdown or (setupShort == 9 and lastCompletedSetup[1] != SHORT) or (setupLong == 9 and lastCompletedSetup[1] != LONG) ? highest(9) : setupHigh[1]
+setupLow := recycleCountdown or (setupShort == 9 and lastCompletedSetup[1] != SHORT) or (setupLong == 9 and lastCompletedSetup[1] != LONG) ? lowest(9) : setupLow[1]
+cancelCountdown := (lastCompletedSetup[1] == SHORT and high < setupLow) or (lastCompletedSetup[1] == LONG and low > setupHigh) or recycleCountdown
+lastCompletedSetup := setupLong == 9 ? LONG : (setupShort == 9 ? SHORT : (((cdownShort[1] == 13 and setupShort[1] != 9) or (cdownLong[1] == 13 and setupLong[1] != 9) or cancelCountdown) ? CANCELLED : lastCompletedSetup[1]))
+cdownShort := (lastCompletedSetup != SHORT or cancelCountdown) ? 0 : (close >= high[2] ? (nz(cdownShort[1]) % 13) + 1 : nz(cdownShort[1]) % 13)
+cdownLong := (lastCompletedSetup != LONG or cancelCountdown) ? 0 : (close <= low[2] ? (nz(cdownLong[1]) % 13) + 1 : nz(cdownLong[1]) % 13)
+cdownCount := max(cdownShort, cdownLong)
+cdownColour := cdownShort > 0 ? shortColour : longColour
+perfect8 := cdownCount < 8 ? na : cdownCount == 8 ? close : perfect8[1]
+perfectCountdown := showPerfect and ((cdownShort == 13 and high >= perfect8) or (cdownLong and low <= perfect8))
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 1 and cdownCount[1] != 1, title="Countdown 1", char="①", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 2 and cdownCount[1] == 1, title="Countdown 2", char="②", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 3 and cdownCount[1] == 2, title="Countdown 3", char="③", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 4 and cdownCount[1] == 3, title="Countdown 4", char="④", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 5 and cdownCount[1] == 4, title="Countdown 5", char="⑤", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 6 and cdownCount[1] == 5, title="Countdown 6", char="⑥", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 7 and cdownCount[1] == 6, title="Countdown 7", char="⑦", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 8 and cdownCount[1] == 7, title="Countdown 8", char="⑧", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 9 and cdownCount[1] == 8, title="Countdown 9", char="⑨", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 10 and cdownCount[1] == 9, title="Countdown 10", char="⑩", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 11 and cdownCount[1] == 10, title="Countdown 11", char="⑪", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(showCountdown and not(showOnlyCompletion) and cdownCount == 12 and cdownCount[1] == 11, title="Countdown 12", char="⑫", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(not(perfectCountdown) and showCountdown and cdownCount == 13 and cdownCount[1] == 12, title="Countdown 13", char="⑬", location=location.belowbar, color=cdownColour, transp=0)
+plotchar(perfectCountdown and showCountdown and cdownCount == 13 and cdownCount[1] == 12, title="Perfect Countdown 13", char="⓭", location=location.belowbar, color=cdownColour, transp=0)
+plotshape(showCountdown and cancelCountdown, title="Countdown broke setup support/resistance", location=location.belowbar, style=shape.cross, color=cdownColour, transp=0)
+tdstSupport = na, tdstResistance = na, tdRisk = na, riskbar = na
+tdstResistance := not(showTDST) ? na : (setupLong == 9 ? highest(9) : (close > tdstResistance[1] ? na : tdstResistance[1]))
+tdstSupport := not(showTDST) ? na : (setupShort == 9 ? lowest(9) : (close < tdstSupport[1] ? na : tdstSupport[1]))
+alertcondition(close > tdstResistance[1] or close < tdstSupport[1], title="Close outside TDST range", message="Close outside TDST range")
+plot(tdstResistance, title="TDST Resistance", color=longColour, style=line, linewidth=2, transp=0)
+plot(tdstSupport, title="TDST Support", color=shortColour, style=line, linewidth=2, transp=0)
+if (not(showRisk))
+  tdRisk := na
+else if (setupLong == 9)
+  riskbar := -1 * lowestbars(9)[0]
+  tdRisk := low[riskbar] - tr[riskbar]
+else if (setupShort == 9)
+  riskbar = -1 * highestbars(9)[0]
+  tdRisk := high[riskbar] + tr[riskbar]
+else
+  tdRisk := min(open, close) < tdRisk[1] and max(open, close) > tdRisk[1] ? na : tdRisk[1]
+plot(tdRisk, title="TD Risk", color=black, style=cross, linewidth=1, transp=0)
