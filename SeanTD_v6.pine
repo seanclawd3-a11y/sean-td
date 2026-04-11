@@ -1,151 +1,182 @@
 //@version=6
-indicator("SeanTD", shorttitle="SeanTD Seq", overlay=true, max_labels_count=500)
+indicator("SeanTD6", shorttitle="SeanTD6 Seq", overlay=true, max_labels_count=500)
 
-showSetup = input.bool(true, "Show setup")
-showCountdown = input.bool(true, "Show countdown")
-showPerfect = input.bool(true, "Show perfect counts")
-invertColours = input.bool(false, "Invert colours")
-showOnlyCompletion = input.bool(false, "Only show completions")
-showTDST = input.bool(true, "Show TDST Support and Resistance")
+// ── INPUTS ─────────────────────────────────────
+showSetup           = input.bool(true,  "Show setup")
+showCountdown       = input.bool(true,  "Show countdown")
+showPerfect         = input.bool(true,  "Show perfect counts")
+invertColours       = input.bool(false, "Invert colours")
+showOnlyCompletion  = input.bool(false, "Only show completions")
+showTDST            = input.bool(true,  "Show TDST Support and Resistance")
 setupRecyclesOnNextBar = input.bool(true, "Setup recycles on next bar")
-flip = input.bool(false, "Setup commences after TD Price Flip")
-showRisk = input.bool(false, "Show risk line")
-exponential = input.bool(true, title="Exponential MA")
-line1 = input.int(24, title="MA1")
-line2 = input.int(50, title="MA2")
-line3 = input.int(128, title="MA3")
-line4 = input.int(200, title="MA4")
+flip                = input.bool(false, "Setup commences after TD Price Flip")
+showRisk            = input.bool(true, "Show risk line")
+exponential         = input.bool(true,  title="Exponential MA")
+line1               = input.int(13,   title="MA1",  minval=1)
+line2               = input.int(21,   title="MA2",  minval=1)
+line3               = input.int(55,  title="MA3",  minval=1)
+line4               = input.int(144,  title="MA4",  minval=1)
 
-src = close
-ma20 = exponential ? ta.ema(src, line1) : ta.sma(src, line1)
-ma50 = exponential ? ta.ema(src, line2) : ta.sma(src, line2)
+// ── MOVING AVERAGES ─────────────────────────────
+src   = close
+ma20  = exponential ? ta.ema(src, line1) : ta.sma(src, line1)
+ma50  = exponential ? ta.ema(src, line2) : ta.sma(src, line2)
 ma100 = exponential ? ta.ema(src, line3) : ta.sma(src, line3)
 ma200 = exponential ? ta.ema(src, line4) : ta.sma(src, line4)
 
-plot(ma20, color=color.new(color.orange, 0), title="MMA1", linewidth=1)
-plot(ma50, color=color.new(color.blue, 0), title="MMA2", linewidth=1)
-plot(ma100, color=color.new(color.green, 0), title="MMA3", linewidth=1)
+plot(ma20,  color=color.new(color.orange, 0), title="MMA1", linewidth=1)
+plot(ma50,  color=color.new(color.blue,   0), title="MMA2", linewidth=1)
+plot(ma100, color=color.new(color.green,  0), title="MMA3", linewidth=1)
 plot(ma200, color=color.new(color.maroon, 0), title="MMA4", linewidth=1)
 
 shortColour = invertColours ? color.red : color.green
-longColour = invertColours ? color.green : color.red
+longColour  = invertColours ? color.green : color.red
 
-// Setup
-setupShort = if close &lt; close[4]
-    0.0
+// ── TD SETUP ────────────────────────────────────
+var int setupShort = 0
+var int setupLong  = 0
+
+if close < close[4]
+    setupShort := 0
 else if flip
-    if nz(setupShort[1]) == 0 and close[1] &lt; close[5] and close &gt; close[4]
-        1.0
+    if nz(setupShort[1]) == 0 and close[1] < close[5] and close > close[4]
+        setupShort := 1
     else if nz(setupShort[1]) == 0
-        0.0
+        setupShort := 0
     else
-        nz(setupShort[1]) + 1
-else if setupShort[1] == 9
-    setupRecyclesOnNextBar ? 1.0 : 0.0
+        setupShort := nz(setupShort[1]) + 1
 else
-    nz(setupShort[1]) + 1
+    if setupShort[1] == 9
+        setupShort := setupRecyclesOnNextBar ? 1 : 0
+    else
+        setupShort := nz(setupShort[1]) + 1
 
-setupLong = if close &gt; close[4]
-    0.0
+if close > close[4]
+    setupLong := 0
 else if flip
-    if nz(setupLong[1]) == 0 and close[1] &gt; close[5] and close &lt; close[4]
-        1.0
+    if nz(setupLong[1]) == 0 and close[1] > close[5] and close < close[4]
+        setupLong := 1
     else if nz(setupLong[1]) == 0
-        0.0
+        setupLong := 0
     else
-        nz(setupLong[1]) + 1
-else if setupLong[1] == 9
-    setupRecyclesOnNextBar ? 1.0 : 0.0
+        setupLong := nz(setupLong[1]) + 1
 else
-    nz(setupLong[1]) + 1
+    if setupLong[1] == 9
+        setupLong := setupRecyclesOnNextBar ? 1 : 0
+    else
+        setupLong := nz(setupLong[1]) + 1
 
-setupCount = math.max(setupShort, setupLong)
-setupColour = setupShort &gt; 0 ? shortColour : longColour
-perfectSetup = showPerfect and ((setupShort == 8 and high &gt;= high[1] and high &gt;= high[2]) or (setupShort == 9 and high &gt;= high[2] and high &gt;= high[3]) or (setupLong == 8 and low &lt;= low[1] and low &lt;= low[2]) or (setupLong == 9 and low &lt;= low[2] and low &lt;= low[3]))
+setupCount  = math.max(setupShort, setupLong)
+setupColour = setupShort > 0 ? shortColour : longColour
 
-// Setup labels
-is_short_setup = setupShort &gt; 0
-setup_y = is_short_setup ? high : low
-setup_yloc = is_short_setup ? yloc.abovebar : yloc.belowbar
-setup_style = is_short_setup ? label.style_label_down : label.style_label_up
-setup_label_color = color.new(setupColour, 20)
+perfectSetup = showPerfect and (
+     (setupShort == 8 and high >= math.max(high[1], high[2])) or
+     (setupShort == 9 and high >= math.max(high[2], high[3])) or
+     (setupLong  == 8 and low  <= math.min(low[1],  low[2]))  or
+     (setupLong  == 9 and low  <= math.min(low[2],  low[3]))
+)
 
-if showSetup and not showOnlyCompletion and setupCount == 1
-    label.new(bar_index, setup_y, &quot;1&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not showOnlyCompletion and setupCount == 2
-    label.new(bar_index, setup_y, &quot;2&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not showOnlyCompletion and setupCount == 3
-    label.new(bar_index, setup_y, &quot;3&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not showOnlyCompletion and setupCount == 4
-    label.new(bar_index, setup_y, &quot;4&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not showOnlyCompletion and setupCount == 5
-    label.new(bar_index, setup_y, &quot;5&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not showOnlyCompletion and setupCount == 6
-    label.new(bar_index, setup_y, &quot;6&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not showOnlyCompletion and setupCount == 7
-    label.new(bar_index, setup_y, &quot;7&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if showSetup and not perfectSetup and not showOnlyCompletion and setupCount == 8
-    label.new(bar_index, setup_y, &quot;8&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if perfectSetup and showSetup and setupCount == 8
-    label.new(bar_index, setup_y, &quot;➑&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if not perfectSetup and showSetup and setupCount == 9
-    label.new(bar_index, setup_y, &quot;⓽&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
-if perfectSetup and showSetup and setupCount == 9
-    label.new(bar_index, setup_y, &quot;➒&quot;, yloc=setup_yloc, color=setup_label_color, style=setup_style, size=size.small, textcolor=color.white)
+plotchar(showSetup and not showOnlyCompletion and setupCount == 1, "Setup 1", "1", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 2, "Setup 2", "2", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 3, "Setup 3", "3", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 4, "Setup 4", "4", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 5, "Setup 5", "5", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 6, "Setup 6", "6", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 7, "Setup 7", "7", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and not showOnlyCompletion and setupCount == 8 and not perfectSetup, "Setup 8", "8", location.abovebar, color.new(setupColour, 0))
+plotchar(showSetup and setupCount == 9 and not perfectSetup, "Setup 9", "⓽", location.abovebar, color.new(setupColour, 0))
+plotchar(perfectSetup and showSetup and setupCount == 8, "Perfect setup 8", "➑", location.abovebar, color.new(setupColour, 0))
+plotchar(perfectSetup and showSetup and setupCount == 9, "Perfect setup 9", "➒", location.abovebar, color.new(setupColour, 0))
 
-// Countdown vars
-LONG = -1.0
-SHORT = 1.0
-CANCELLED = 0.0
+// ── TD COUNTDOWN ────────────────────────────────
+var int   lastCompletedSetup = 0
+var float setupHigh          = na
+var float setupLow           = na
 
-setupHigh = ta.highest(9)
-setupLow = ta.lowest(9)
+float highest9 = ta.highest(9)
+float lowest9  = ta.lowest(9)
 
-recycleCountdown = ((setupShort == 9 and nz(lastCompletedSetup[1]) == SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) == LONG)) and (setupHigh - setupLow) &gt;= (nz(setupHigh[1]) - nz(setupLow[1])) and (nz(setupHigh[1]) - nz(setupLow[1])) * 1.618 &gt; (setupHigh - setupLow)
+recycleCountdown = (setupShort == 9 and lastCompletedSetup[1] == 1) or (setupLong == 9 and lastCompletedSetup[1] == -1) and
+                   (highest9 - lowest9) >= (setupHigh[1] - setupLow[1]) and (setupHigh[1] - setupLow[1]) * 1.618 > (highest9 - lowest9)
 
-cancelCountdown = (nz(lastCompletedSetup[1]) == SHORT and high &lt; nz(setupLow[1])) or (nz(lastCompletedSetup[1]) == LONG and low &gt; nz(setupHigh[1])) or recycleCountdown
+setupHigh := recycleCountdown or (setupShort == 9 and lastCompletedSetup[1] != 1) or (setupLong == 9 and lastCompletedSetup[1] != -1) ? highest9 : setupHigh[1]
+setupLow  := recycleCountdown or (setupShort == 9 and lastCompletedSetup[1] != 1) or (setupLong == 9 and lastCompletedSetup[1] != -1) ? lowest9  : setupLow[1]
 
-lastCompletedSetup = setupLong == 9 ? LONG : setupShort == 9 ? SHORT : ((nz(cdownShort[1]) == 13 and nz(setupShort[1]) != 9) or (nz(cdownLong[1]) == 13 and nz(setupLong[1]) != 9) or cancelCountdown) ? CANCELLED : nz(lastCompletedSetup[1])
+cancelCountdown = (lastCompletedSetup[1] == 1 and high < setupLow) or (lastCompletedSetup[1] == -1 and low > setupHigh) or recycleCountdown
 
-setupHigh := recycleCountdown or (setupShort == 9 and nz(lastCompletedSetup[1]) != SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) != LONG) ? ta.highest(9) : nz(setupHigh[1])
-setupLow := recycleCountdown or (setupShort == 9 and nz(lastCompletedSetup[1]) != SHORT) or (setupLong == 9 and nz(lastCompletedSetup[1]) != LONG) ? ta.lowest(9) : nz(setupLow[1])
+lastCompletedSetup := setupLong == 9 ? -1 : setupShort == 9 ? 1 : (cancelCountdown ? 0 : lastCompletedSetup[1])
 
-cdownShort = (lastCompletedSetup != SHORT or cancelCountdown) ? 0.0 : (close &gt;= high[2] ? (nz(cdownShort[1]) % 13) + 1 : nz(cdownShort[1]) % 13)
-cdownLong = (lastCompletedSetup != LONG or cancelCountdown) ? 0.0 : (close &lt;= low[2] ? (nz(cdownLong[1]) % 13) + 1 : nz(cdownLong[1]) % 13)
+var int cdownShort = 0
+var int cdownLong  = 0
 
-cdownCount = math.max(cdownShort, cdownLong)
-cdownColour = cdownShort &gt; 0 ? shortColour : longColour
+cdownShort := (lastCompletedSetup != 1 or cancelCountdown) ? 0 : (close >= high[2] ? (cdownShort[1] % 13) + 1 : cdownShort[1] % 13)
+cdownLong  := (lastCompletedSetup != -1 or cancelCountdown) ? 0 : (close <= low[2]  ? (cdownLong[1]  % 13) + 1 : cdownLong[1]  % 13)
 
-perfect8 = cdownCount &lt; 8 ? na : cdownCount == 8 ? close : nz(perfect8[1])
-perfectCountdown = showPerfect and ((cdownShort == 13 and high &gt;= perfect8) or (cdownLong == 13 and low &lt;= perfect8))
+cdownCount  = math.max(cdownShort, cdownLong)
+cdownColour = cdownShort > 0 ? shortColour : longColour
 
-// Countdown labels (abbreviated for space, full in file)
-cdown_label_color = color.new(cdownColour, 20)
-if showCountdown and not showOnlyCompletion and cdownCount == 1 and cdownCount[1] != 1
-    label.new(bar_index, low, &quot;①&quot;, yloc=yloc.belowbar, color=cdown_label_color, style=label.style_label_up, size=size.small)
- // ... (full 1-13 labels as before)
+var float perfect8 = na
+perfect8 := cdownCount < 8 ? na : cdownCount == 8 ? close : perfect8[1]
 
-plotshape(showCountdown and cancelCountdown, title="Countdown broke", style=shape.xcross, location=location.belowbar, color=color.new(cdownColour, 0))
+perfectCountdown = showPerfect and ((cdownShort == 13 and high >= perfect8) or (cdownLong == 13 and low <= perfect8))
 
-// TDST
-tdstResistance = showTDST ? (setupLong == 9 ? ta.highest(9) : close &gt; nz(tdstResistance[1]) ? na : nz(tdstResistance[1])) : na
-tdstSupport = showTDST ? (setupShort == 9 ? ta.lowest(9) : close &lt; nz(tdstSupport[1]) ? na : nz(tdstSupport[1])) : na
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 1 and cdownCount[1] != 1, "Countdown 1",  "①", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 2 and cdownCount[1] == 1, "Countdown 2",  "②", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 3 and cdownCount[1] == 2, "Countdown 3",  "③", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 4 and cdownCount[1] == 3, "Countdown 4",  "④", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 5 and cdownCount[1] == 4, "Countdown 5",  "⑤", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 6 and cdownCount[1] == 5, "Countdown 6",  "⑥", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 7 and cdownCount[1] == 6, "Countdown 7",  "⑦", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 8 and cdownCount[1] == 7, "Countdown 8",  "⑧", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 9 and cdownCount[1] == 8, "Countdown 9",  "⑨", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 10 and cdownCount[1] == 9, "Countdown 10", "⑩", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 11 and cdownCount[1] == 10,"Countdown 11", "⑪", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and cdownCount == 12 and cdownCount[1] == 11,"Countdown 12", "⑫", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and not showOnlyCompletion and not perfectCountdown and cdownCount == 13 and cdownCount[1] == 12, "Countdown 13", "⑬", location.belowbar, color.new(cdownColour, 0))
+plotchar(showCountdown and perfectCountdown and cdownCount == 13 and cdownCount[1] == 12, "Perfect Countdown 13", "⓭", location.belowbar, color.new(cdownColour, 0))
 
-plot(tdstResistance, "TDST Resistance", color.new(longColour, 0), 2)
-plot(tdstSupport, "TDST Support", color.new(shortColour, 0), 2)
+plotshape(showCountdown and cancelCountdown, title="Countdown broke setup", location=location.belowbar, style=shape.cross, color=color.new(cdownColour, 0), size=size.small)
 
-if barstate.isconfirmed and (close &gt; nz(tdstResistance[1]) or close &lt; nz(tdstSupport[1]))
-    alert("Close outside TDST range", alert.freq_once_per_bar_close)
+// ── TDST LINES ──────────────────────────────────
+var float tdstResistance = na
+var float tdstSupport    = na
 
-// Risk
-tdRisk = if not showRisk
-    na
-else if setupLong == 9
-    low[ta.lowestbars(low, 9)] - ta.tr(true)[ta.lowestbars(low, 9)]
-else if setupShort == 9
-    high[ta.highestbars(high, 9)] + ta.tr(true)[ta.highestbars(high, 9)]
+if showTDST
+    if setupLong == 9
+        tdstResistance := highest9
+    else if not na(tdstResistance[1]) and close > tdstResistance[1]
+        tdstResistance := na
+
+    if setupShort == 9
+        tdstSupport := lowest9
+    else if not na(tdstSupport[1]) and close < tdstSupport[1]
+        tdstSupport := na
 else
-    crossed = math.min(open, close) &lt; nz(tdRisk[1]) and math.max(open, close) &gt; nz(tdRisk[1])
-    crossed ? na : nz(tdRisk[1])
+    tdstResistance := na
+    tdstSupport := na
 
-plot(tdRisk, "TD Risk", color.new(color.black, 0), style=plot.style_cross, linewidth=1)
+plot(tdstResistance, "TDST Resistance", color=color.new(longColour,  0), linewidth=2)
+plot(tdstSupport,    "TDST Support",    color=color.new(shortColour, 0), linewidth=2)
+
+alertcondition(close > tdstResistance[1] or close < tdstSupport[1], "Close outside TDST range", "Close outside TDST range")
+
+// ── RISK LINE ───────────────────────────────────
+var float tdRisk = na
+
+// Pre-compute every bar (fixes consistency warnings)
+int lowestBars9  = ta.lowestbars(9)
+int highestBars9 = ta.highestbars(9)
+
+if showRisk
+    if setupLong == 9
+        int riskbar = -lowestBars9
+        tdRisk := low[riskbar] - ta.tr[riskbar]
+    else if setupShort == 9
+        int riskbar = -highestBars9
+        tdRisk := high[riskbar] + ta.tr[riskbar]
+    else
+        tdRisk := (math.min(open, close) < tdRisk[1] and math.max(open, close) > tdRisk[1] ? na : tdRisk[1])
+else
+    tdRisk := na
+
+plot(tdRisk, "TD Risk", color=color.new(color.black, 0), style=plot.style_cross, linewidth=1)
